@@ -75,7 +75,7 @@ void result () {
       Serial.println("Data : " + command);
       Serial.println("CRC Controle : " + (String)CRC8(command));
       msgweb ="";
-      while(CRC.toInt()!=CRC8(command)){
+      while(CRC.toInt()!=CRC8(command) && i< 100){ // tant que l'on n'a pas une trame complète et que l'on n'a pas fait 100 tentatives
         command = mySerial.readStringUntil('\n');
         Serial.println("Trame : " + command);
         CRC = command.substring(command.indexOf('$')+1);
@@ -83,11 +83,12 @@ void result () {
         command = command.substring(0,command.indexOf('$'));
         Serial.println("Data : " + command);
         Serial.println("CRC Controle : " + (String)CRC8(command));
+        i++; 
       }
-    //command.length()
-      int commaIndex = 0;
-      int secondcommaIndex = command.indexOf(';');
-      while( secondcommaIndex!= -1){
+      if (i<100){
+       int commaIndex = 0;
+       int secondcommaIndex = command.indexOf(';');
+       while( secondcommaIndex!= -1){
         String message = command.substring(commaIndex,secondcommaIndex);
         String param = message.substring(0,message.indexOf('>'));
         if (param=="FID"){
@@ -108,8 +109,12 @@ void result () {
         commaIndex = secondcommaIndex + 1;
         secondcommaIndex = command.indexOf(';',commaIndex);
       }
+    } else {
+      msgweb ="Time out";
     }
-  
+  } else {
+    msgweb = "Serial non disponible";
+  }
   server.send(200, "text/plain", msgweb);
   Serial.println("Fin de l'appel"); 
 }
