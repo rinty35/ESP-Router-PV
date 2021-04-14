@@ -10,8 +10,7 @@
 ESP8266WebServer server(80); //server web
 SoftwareSerial mySerial;
 WiFiManager wifiManager;
-String command;
-
+String msgweb;
 
 void setup() {
   Serial.begin(9600); //Permet la communication en serial
@@ -57,65 +56,108 @@ void loop() {
   // put your main code here, to run repeatedly:
   server.handleClient();
   ArduinoOTA.handle();
-  delay (10);
+  int i = 0;
+  String command = "";
+
+  String CRC = "999";
+  while(CRC.toInt()!=CRC8(command) && i< 100){
+    if (mySerial.available()>0){
+      command = mySerial.readStringUntil('\n');
+      Serial.println("Trame : " + command);
+      CRC = command.substring(command.indexOf('$')+1);
+      Serial.println ("CRC emetteur : " +   CRC);
+      command = command.substring(0,command.indexOf('$'));
+      Serial.println("Data : " + command);
+      Serial.println("CRC Controle : " + (String)CRC8(command));
+
+    }
+    i++; 
+  }
+  if (i<100){
+    msgweb="";
+    int commaIndex = 0;
+    int secondcommaIndex = command.indexOf(';');
+    while( secondcommaIndex!= -1){
+      String message = command.substring(commaIndex,secondcommaIndex);
+      String param = message.substring(0,message.indexOf('>'));
+      if (param=="FID"){
+        msgweb += "FireDelay : " + message.substring(message.indexOf('>')+1)+ "<BR>";
+      }else if (param=="EIB"){
+        msgweb += "Energy In Bucket : " + message.substring(message.indexOf('>')+1) + "<BR>";
+      }else if (param=="MPC"){
+        msgweb += "Min Power Routable : " + message.substring(message.indexOf('>')+1) + "<BR>";
+      }else if (param=="REE"){
+        msgweb += "Real Energy : " + message.substring(message.indexOf('>')+1)+ "<BR>";
+      }else if (param=="POR"){
+        msgweb += "Power Routed : " + message.substring(message.indexOf('>')+1)+ "<BR>";
+      }else if (param=="SPL"){
+        msgweb += "Samples : " + message.substring(message.indexOf('>')+1)+ "<BR>";
+      //i++;
+      }
+      commaIndex = secondcommaIndex + 1;
+      secondcommaIndex = command.indexOf(';',commaIndex);
+    }
+  //}else{
+  //  msgweb ="Serial - time out<BR><BR>" + msgweb;
+  }
+ // msgweb ="<html lang=\"fr\"><head><meta http-equiv=\"refresh\" content=\"1\"></head><body>"+ msgweb + "</body></html>";
+  /*if (mySerial.available()>0){
+    msgweb ="";
+    command = mySerial.readStringUntil('\n');
+    Serial.println("Trame : " + command);
+    String CRC = command.substring(command.indexOf('$')+1);
+    Serial.println ("CRC emetteur : " +   CRC);
+    command = command.substring(0,command.indexOf('$'));
+    Serial.println("Data : " + command);
+    Serial.println("CRC Controle : " + (String)CRC8(command));
+    while(CRC.toInt()!=CRC8(command) && i< 100){ // tant que l'on n'a pas une trame complète et que l'on n'a pas fait 100 tentatives
+      command = mySerial.readStringUntil('\n');
+      Serial.println("Trame : " + command);
+      CRC = command.substring(command.indexOf('$')+1);
+      Serial.println ("CRC emetteur : " +   CRC);
+      command = command.substring(0,command.indexOf('$'));
+      Serial.println("Data : " + command);
+      Serial.println("CRC Controle : " + (String)CRC8(command));
+      i++; 
+    }
+    if (i<100){
+     int commaIndex = 0;
+     int secondcommaIndex = command.indexOf(';');
+     while( secondcommaIndex!= -1){
+      String message = command.substring(commaIndex,secondcommaIndex);
+      String param = message.substring(0,message.indexOf('>'));
+      if (param=="FID"){
+        msgweb += "FireDelay : " + message.substring(message.indexOf('>')+1)+ "<BR>";
+      }else if (param=="EIB"){
+        msgweb += "Energy In Bucket : " + message.substring(message.indexOf('>')+1) + "<BR>";
+      }else if (param=="MPC"){
+        msgweb += "Min Power Routable : " + message.substring(message.indexOf('>')+1) + "<BR>";
+      }else if (param=="REE"){
+        msgweb += "Real Energy : " + message.substring(message.indexOf('>')+1)+ "<BR>";
+      }else if (param=="POR"){
+        msgweb += "Power Routed : " + message.substring(message.indexOf('>')+1)+ "<BR>";
+      }else if (param=="SPL"){
+        msgweb += "Samples : " + message.substring(message.indexOf('>')+1)+ "<BR>";
+        i++;
+      }
+      commaIndex = secondcommaIndex + 1;
+      secondcommaIndex = command.indexOf(';',commaIndex);
+    }
+  } else {
+    msgweb ="Time out";
+  }
+} else {
+msgweb = "Serial non disponible<BR><BR>" + msgweb;
+}
+delay(100);*/
 }
 
 void result () {
   Serial.println ("Appel de la page");
   //server.setContentLength(CONTENT_LENGTH_UNKNOWN);
-   String msgweb;
-  int i = 0;
+   
 
-    if(mySerial.available()){
-      command = mySerial.readStringUntil('\n');
-      Serial.println("Trame : " + command);
-      String CRC = command.substring(command.indexOf('$')+1);
-      Serial.println ("CRC emetteur : " +   CRC);
-      command = command.substring(0,command.indexOf('$'));
-      Serial.println("Data : " + command);
-      Serial.println("CRC Controle : " + (String)CRC8(command));
-      msgweb ="";
-      while(CRC.toInt()!=CRC8(command) && i< 100){ // tant que l'on n'a pas une trame complète et que l'on n'a pas fait 100 tentatives
-        command = mySerial.readStringUntil('\n');
-        Serial.println("Trame : " + command);
-        CRC = command.substring(command.indexOf('$')+1);
-        Serial.println ("CRC emetteur : " +   CRC);
-        command = command.substring(0,command.indexOf('$'));
-        Serial.println("Data : " + command);
-        Serial.println("CRC Controle : " + (String)CRC8(command));
-        i++; 
-      }
-      if (i<100){
-       int commaIndex = 0;
-       int secondcommaIndex = command.indexOf(';');
-       while( secondcommaIndex!= -1){
-        String message = command.substring(commaIndex,secondcommaIndex);
-        String param = message.substring(0,message.indexOf('>'));
-        if (param=="FID"){
-          msgweb += "FireDelay : " + message.substring(message.indexOf('>')+1) + " ";
-
-        }else if (param=="EIB"){
-          msgweb += "Energy In Bucket : " + message.substring(message.indexOf('>')+1) + " ";
-        }else if (param=="MPC"){
-          msgweb += "Min Power Routable : " + message.substring(message.indexOf('>')+1 ) + " ";
-        }else if (param=="REE"){
-          msgweb += "Real Energy : " + message.substring(message.indexOf('>')+1) + " ";
-        }else if (param=="POR"){
-          msgweb += "Power Routed : " + message.substring(message.indexOf('>')+1) + " ";
-        }else if (param=="SPL"){
-          msgweb += "Samples : " + message.substring(message.indexOf('>')+1)  + '\n';
-          i++;
-        }
-        commaIndex = secondcommaIndex + 1;
-        secondcommaIndex = command.indexOf(';',commaIndex);
-      }
-    } else {
-      msgweb ="Time out";
-    }
-  } else {
-    msgweb = "Serial non disponible";
-  }
-  server.send(200, "text/plain", msgweb);
+  server.send(200, "text/html","<html lang=\"fr\"><head><meta http-equiv=\"refresh\" content=\"1\"></head><body>" + msgweb + "</body></html>");
   Serial.println("Fin de l'appel"); 
 }
 
