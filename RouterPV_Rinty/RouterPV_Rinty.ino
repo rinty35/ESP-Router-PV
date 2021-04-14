@@ -29,7 +29,8 @@
 //++++++++ PARAMETRES A MODIFIER SUIVANT INSTALL++++++
 #define CE 1350   // puissance Chauffe eau W 
 #define capacityOfEnergyBucket 3600 // AU LIEU DE 3600 (900 capacité des panneaux 1800KVC à remplir le bucket en 1/2s)
-float safetyMargin_watts = 0;  // <<<------ increase for more export
+#define niveaubucketbas 1300 //seuil bas pour lequel on ne déclanche pas 
+float safetyMargin_watts = 40;  // <<<------ increase for more export
 //+++++++++++++++++++++++++++++++++++++++++++++++++
 
 
@@ -155,6 +156,26 @@ void loop() // Une paire tension / courant est mesurée à chaque boucle (enviro
 			realEnergy = realPower / cyclesPerSecond;
       cycleCount++; // incrément Nb de périodes  
 
+//envoi des informations sur le port série
+      if((cycleCount >= 150)) // display once per second
+      {
+        String message = "EIB>" + (String)energyInBucket; 
+        message += ";REE>" + (String)realPower; // Power mesured
+        message +=";MPC>" + (String) (Minpowerroutable * cyclesPerSecond); //Min Power Charge
+        message += ";POR>" + (String)(CE*(1-((float)firingDelayInMicros/10000))); //Energy routed
+        message += ";FID>" + (String)(firingDelayInMicros); //Firedelay
+        message += ";SPL>" + (String)(samplesDuringThisMainsCycle);
+        message += ";";
+        message += "$"+ (String)CRC8(message) ;
+        Serial.println(message);
+       /* Serial.print(";MPC>"); Serial.print(Minpowerroutable * cyclesPerSecond); //Min Power Charge
+        Serial.print(";POR>"); Serial.print(CE*(1-((float)firingDelayInMicros/10000))); //Energy routed
+        Serial.print(";FID>"); Serial.print(firingDelayInMicros); //Firedelay
+        Serial.print(";SPL>"); Serial.print(samplesDuringThisMainsCycle);
+        Serial.println(";");
+    */
+        cycleCount = 100;
+      }    
 		  //----------------------------------------------------------------
 		  // WARNING - Serial statements can interfere with time-critical code, but
 		  //           they can be really useful for calibration trials!
@@ -177,17 +198,20 @@ void loop() // Une paire tension / courant est mesurée à chaque boucle (enviro
       }
 */
   //    				energyInBucket += realEnergy;   
-      if (energyInBucket < 100 && realEnergy < Minpowerroutable && realEnergy >0) { //si le sceau est sous le seuil de routage et que l'énergie mesurée est inférieure au min soutirable par la charge mais positive
+      if (energyInBucket < niveaubucketbas && realEnergy < Minpowerroutable && realEnergy >0) { //si le sceau est sous le seuil de routage et que l'énergie mesurée est inférieure au min soutirable par la charge mais positive
      //on est à l'équilibre prod-conso on remet le sceau à 0
         energyInBucket = 0;
+      } else if (realEnergy < 0) {      // Reduction d'énergie dans le reservoir d'une quantité "safety margin"
+        energyInBucket += realEnergy;
+        energyInBucket -= safetyMargin_watts / cyclesPerSecond; // Soustraction de la safety margin en fonction du % de remplissage du sceau Plein on ne retire rien, quasi vide on retire la safetymargin
       } else {
-        energyInBucket += realEnergy;  
+        energyInBucket += realEnergy;
       }
 		 
-		  // Reduction d'énergie dans le reservoir d'une quantité "safety margin"
+
 		  // Ceci permet au système un décalage pour plus d'injection ou + de soutirage 
 	//			energyInBucket -= (safetyMargin_watts / cyclesPerSecond)*(1-energyInBucket/(float)capacityOfEnergyBucket); // Soustraction de la safety margin en fonction du % de remplissage du sceau Plein on ne retire rien, quasi vide on retire la safetymargin
-        energyInBucket -= safetyMargin_watts / cyclesPerSecond; // Soustraction de la safety margin en fonction du % de remplissage du sceau Plein on ne retire rien, quasi vide on retire la safetymargin
+
 
 		  // Limites dans la fourchette 0 ...1000 joules ;ne peut être négatif le 11 / 2 / 18
 				if (energyInBucket > capacityOfEnergyBucket)
@@ -207,7 +231,7 @@ void loop() // Une paire tension / courant est mesurée à chaque boucle (enviro
 		  // determines the correct firing delay for a direct-acting trigger
 
 		  // never fire if energy level is below lower threshold (zero power)  
-			if (energyInBucket <= 100) { firingDelayInMicros = 99999;} 
+			if (energyInBucket <= niveaubucketbas) { firingDelayInMicros = 99999;} 
 			else  
 		  // fire immediately if energy level is above upper threshold (full power)
 			if (energyInBucket >= capacityOfEnergyBucket) { firingDelayInMicros = 0;} 
@@ -305,25 +329,7 @@ void loop() // Une paire tension / courant est mesurée à chaque boucle (enviro
 
 	cumVdeltasThisCycle += (sampleV - DCoffset); // pour usage avec filtre passe bas
 
-  if((cycleCount >= 150)) // display once per second
-  {
-    String message = "EIB>" + (String)energyInBucket; 
-    message += ";REE>" + (String)realPower; // Power mesured
-    message +=";MPC>" + (String) (Minpowerroutable * cyclesPerSecond); //Min Power Charge
-    message += ";POR>" + (String)(CE*(1-((float)firingDelayInMicros/10000))); //Energy routed
-    message += ";FID>" + (String)(firingDelayInMicros); //Firedelay
-    message += ";SPL>" + (String)(samplesDuringThisMainsCycle);
-    message += ";";
-    message += "$"+ (String)CRC8(message) ;
-    Serial.println(message);
-   /* Serial.print(";MPC>"); Serial.print(Minpowerroutable * cyclesPerSecond); //Min Power Charge
-    Serial.print(";POR>"); Serial.print(CE*(1-((float)firingDelayInMicros/10000))); //Energy routed
-    Serial.print(";FID>"); Serial.print(firingDelayInMicros); //Firedelay
-    Serial.print(";SPL>"); Serial.print(samplesDuringThisMainsCycle);
-    Serial.println(";");
-*/
-    cycleCount = 100;
-  }    
+
 } // end of loop()
 
 int CRC8(String stringData) {
