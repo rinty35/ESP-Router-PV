@@ -76,7 +76,7 @@ unsigned long Fd; // firing delay
 void setup()
 {   
    wdt_enable(WDTO_8S); 
-  Serial.begin(500000); // pour tests
+  Serial.begin(2400); // pour tests
   pinMode(CdeCh1, OUTPUT);
   pinMode(CdeCh2, OUTPUT);
 
