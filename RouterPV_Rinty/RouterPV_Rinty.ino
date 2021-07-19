@@ -29,8 +29,8 @@
 //++++++++ PARAMETRES A MODIFIER SUIVANT INSTALL++++++
 #define CE 1350   // puissance Chauffe eau W 
 #define capacityOfEnergyBucket 3600 // AU LIEU DE 3600 (900 capacité des panneaux 1800KVC à remplir le bucket en 1/2s)
-#define niveaubucketbas 1300 //seuil bas pour lequel on ne déclanche pas 
-float safetyMargin_watts = 40;  // <<<------ increase for more export
+#define niveaubucketbas 200 //seuil bas pour lequel on ne déclanche pas 
+float safetyMargin_watts = 10;  // <<<------ increase for more export
 //+++++++++++++++++++++++++++++++++++++++++++++++++
 
 
@@ -201,9 +201,9 @@ void loop() // Une paire tension / courant est mesurée à chaque boucle (enviro
       if (energyInBucket < niveaubucketbas && realEnergy < Minpowerroutable && realEnergy >0) { //si le sceau est sous le seuil de routage et que l'énergie mesurée est inférieure au min soutirable par la charge mais positive
      //on est à l'équilibre prod-conso on remet le sceau à 0
         energyInBucket = 0;
-      } else if (realEnergy < 0) {      // Reduction d'énergie dans le reservoir d'une quantité "safety margin"
+      } else if (realEnergy < 0) {      // Reduction d'énergie dans le reservoir d'une quantité "safety margin" afin retablir l'équilibre plus vite
         energyInBucket += realEnergy;
-        energyInBucket -= safetyMargin_watts / cyclesPerSecond; // Soustraction de la safety margin en fonction du % de remplissage du sceau Plein on ne retire rien, quasi vide on retire la safetymargin
+        energyInBucket -= safetyMargin_watts / cyclesPerSecond;
       } else {
         energyInBucket += realEnergy;
       }
@@ -240,11 +240,11 @@ void loop() // Une paire tension / courant est mesurée à chaque boucle (enviro
 		  // by using either of the following algorithms
 			{ 
 		  // simple algorithm (with non-linear power response across the energy range)
-		         firingDelayInMicros = 10 * (capacityOfEnergyBucket - energyInBucket); 
-      //  firingDelayInMicros = round (10000 * (1-(energyInBucket/capacityOfEnergyBucket))); //(10000 microsecond durée d'un demie cycle * 1- % de charge du bucket)
+		  //       firingDelayInMicros = 10 * (capacityOfEnergyBucket - energyInBucket); 
+        firingDelayInMicros = round (10000 * (1-(energyInBucket/capacityOfEnergyBucket))); //(10000 microsecond durée d'un demie cycle * 1- % de charge du bucket)
       
 		  // complex algorithm which reflects the non-linear nature of phase-angle control.  
-			//	firingDelayInMicros = (asin((-1 * (energyInBucket - 1800) / 500)) + (PI/2)) * (10000/PI);
+			//	firingDelayInMicros = (asin((-1 * (energyInBucket - (capacityOfEnergyBucket/2)) / 500)) + (PI/2)) * (10000/PI);
 			
 			// Suppress firing at low energy levels to avoid complications with 
 			// logic near the end of each half-cycle of the mains.  
@@ -296,7 +296,7 @@ void loop() // Une paire tension / courant est mesurée à chaque boucle (enviro
 	{
     // Unless dumping full power, release the trigger on all loops in this 
     // half cycle after the one during which the trigger was set.  
-		if (firingDelayInMicros > Fireimediatly) {     
+		if (firingDelayInMicros > Fireimediatly) { // on arrete la demande d'allumage une fois que la sinusoide passe sous le seuil le MOC du SSR s'arrête.    
 			digitalWrite(CdeCh1, OFF);
 		}
 	}

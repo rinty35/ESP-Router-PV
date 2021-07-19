@@ -6,18 +6,18 @@
 #include <ESP8266WebServer.h>
 #include <ArduinoJson.h>
 
+float CE = 2000; //puissance en W du chauffe eau
 
 ESP8266WebServer server(80); //server web
 SoftwareSerial mySerial;
 WiFiManager wifiManager;
 String msgweb;
-const byte tab_Routeur_size = 96;
+const byte tab_Routeur_size = 128;
 StaticJsonDocument<tab_Routeur_size> Tab_Routeur;
 
 void setup() {
+  WiFi.mode(WIFI_STA);
   Serial.begin(9600); //Permet la communication en serial
-  mySerial.begin(2400, SWSERIAL_8N1, D1, D2, false, 256);
-  Serial.println("Port série initialisé");
 
   // put your setup code here, to run once:
   //Création du point d'accès
@@ -27,6 +27,8 @@ void setup() {
   if (WiFi.status()!= WL_CONNECTED){
     ESP.reset();
   }
+  mySerial.begin(2400, SWSERIAL_8N1, D1, D2, false, 256);
+  Serial.println("Port série initialisé");
   Serial.println("Connection au WIFI OK");
   Serial.println("Démarrage du serveur web");
   server.on("/", result);
@@ -58,6 +60,7 @@ void setup() {
   Tab_Routeur["REE"]=0;
   Tab_Routeur["POR"]=0;
   Tab_Routeur["SPL"]=0;
+  Tab_Routeur["VO2"]=0;
   
 }
 
@@ -103,11 +106,18 @@ void loop() {
         msgweb += "Real Energy : " + value+ "<BR>";
         Tab_Routeur["REE"]=value.toFloat();
       }else if (param=="POR"){
-        msgweb += "Power Routed : " + value+ "<BR>";
-        Tab_Routeur["POR"]=value.toFloat();
+        msgweb += "Power Routed en % : " + (String)(value.toFloat()) + "<BR>Power Routed : " + (String)(value.toFloat()*CE/100) + "<BR>";
+        if (value.toFloat()<0){
+          Tab_Routeur["POR"]=0;
+        } else {
+          Tab_Routeur["POR"]=value.toFloat()*CE/100;
+        }
       }else if (param=="SPL"){
         msgweb += "Samples : " + value+ "<BR>";
         Tab_Routeur["SPL"]=value.toFloat();
+      }else if (param=="VO2"){
+        msgweb += "Routage voie 2 : " + value+ "<BR>";
+        Tab_Routeur["VO2"]=value.toFloat();
       //i++;
       }
       commaIndex = secondcommaIndex + 1;
