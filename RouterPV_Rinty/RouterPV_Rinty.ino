@@ -220,8 +220,7 @@ void loop() // Une paire tension / courant est mesurée à chaque boucle (enviro
 					energyInBucket = 0;    
 			}
 			else // Après un reset attendre 100 périodes (2 secondes) le temps que la composante continue soit éliminée par le filtre   
-			{  
-//				cycleCount++; // incrément Nb de périodes     
+			{   
 				if(cycleCount > 100) // deux secondes
 					beyondStartUpPhase = true; //croisière
 			}
