@@ -27,7 +27,7 @@ void setup() {
   if (WiFi.status()!= WL_CONNECTED){
     ESP.reset();
   }
-  mySerial.begin(2400, SWSERIAL_8N1, D1, D2, false, 256);
+  mySerial.begin(9600, SWSERIAL_8N1, D1, D1, false, 256);
   Serial.println("Port série initialisé");
   Serial.println("Connection au WIFI OK");
   Serial.println("Démarrage du serveur web");
@@ -68,24 +68,24 @@ void loop() {
   // put your main code here, to run repeatedly:
   server.handleClient();
   ArduinoOTA.handle();
-  int i = 0;
+  //int i = 0;
   String command = "";
 
   String CRC = "999";
-  while(CRC.toInt()!=CRC8(command) && i< 100){
+ // while(CRC.toInt()!=CRC8(command) && i< 100){
     if (mySerial.available()>0){
       command = mySerial.readStringUntil('\n');
       Serial.println("Trame : " + command);
       CRC = command.substring(command.indexOf('$')+1);
-      Serial.println ("CRC emetteur : " +   CRC);
+      //Serial.println ("CRC emetteur : " +   CRC);
       command = command.substring(0,command.indexOf('$'));
-      Serial.println("Data : " + command);
-      Serial.println("CRC Controle : " + (String)CRC8(command));
-
+      //Serial.println("Data : " + command);
+      //Serial.println("CRC Controle : " + (String)CRC8(command));
     }
-    i++; 
-  }
-  if (i<100){
+ //   i++; 
+ // }
+  if (CRC.toInt()==CRC8(command)){
+
     msgweb="";
     int commaIndex = 0;
     int secondcommaIndex = command.indexOf(';');
@@ -123,8 +123,8 @@ void loop() {
       commaIndex = secondcommaIndex + 1;
       secondcommaIndex = command.indexOf(';',commaIndex);
     }
-  //}else{
-  //  msgweb ="Serial - time out<BR><BR>" + msgweb;
+//  }else{
+//    msgweb ="Serial - time out";
   }
  // msgweb ="<html lang=\"fr\"><head><meta http-equiv=\"refresh\" content=\"1\"></head><body>"+ msgweb + "</body></html>";
   /*if (mySerial.available()>0){
@@ -179,12 +179,12 @@ delay(100);*/
 }
 
 void result () {
-  Serial.println ("Appel de la page");
+ // Serial.println ("Appel de la page");
   //server.setContentLength(CONTENT_LENGTH_UNKNOWN);
-   
+  Serial.println ("Appel de la page");
 
   server.send(200, "text/html","<html lang=\"fr\"><head><meta http-equiv=\"refresh\" content=\"1\"></head><body>" + msgweb + "</body></html>");
-  Serial.println("Fin de l'appel"); 
+  //Serial.println("Fin de l'appel"); 
 }
 
 void sendRouteur () {
@@ -192,7 +192,7 @@ void sendRouteur () {
   char buffer[tab_Routeur_size];
   serializeJson(Tab_Routeur, buffer);
   server.send(200, "application/json",buffer);
-  Serial.println("Fin de l'API"); 
+  //Serial.println("Fin de l'API"); 
 }
 
 int CRC8(String stringData) {
