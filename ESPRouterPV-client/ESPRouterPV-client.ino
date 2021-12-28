@@ -21,6 +21,7 @@ StaticJsonDocument<16> filter;
 const byte tab_Routeur_size = 48;
 StaticJsonDocument<tab_Routeur_size> Tab_Routeur;
 int VO2 = 0;
+int MANUAL = 0;
 
 void setup() {
   WiFi.mode(WIFI_STA);
@@ -40,9 +41,10 @@ void setup() {
   }
   Serial.println("Connection au WIFI OK");
   Serial.println("Démarrage du serveur web");
-  //server.on("/", result);
-  //server.on("/api/routeur", sendRouteur);
-  //server.begin();
+  server.on("/", result);
+  server.on("/api/info", sendRouteur);
+  server.on("/api/param", paramRouteur);
+  server.begin();
 
   ArduinoOTA.setHostname("ESPRooterPVClient");
   ArduinoOTA.onStart([]() {
@@ -77,7 +79,7 @@ void setup() {
 void loop() {
   static unsigned long Millisajustdimmer = 0;
   // put your main code here, to run repeatedly:
-  //server.handleClient();
+  server.handleClient();
   ArduinoOTA.handle();
 
   WiFiClient client;
@@ -95,7 +97,11 @@ void loop() {
             Serial.println("Impossible de lire le JSON");
             Serial.println(error.c_str());
           }else {
-            VO2 = Tab_Routeur["VO2"];
+            
+            if (MANUAL >= Tab_Routeur["VO2"]){
+              Tab_Routeur["VO2"]=MANUAL;
+            } 
+            VO2 = Tab_Routeur["VO2"];            
             Serial.println("VO2 : "+ (String) VO2);
             if (VO2 > 0) {
               dimmer.setPower(VO2);
@@ -117,17 +123,40 @@ void loop() {
   }
 }
 
-/*void result () {
+void result () {
   Serial.println ("Appel de la page");
   //server.setContentLength(CONTENT_LENGTH_UNKNOWN);
-   
-
   server.send(200, "text/html","<html lang=\"fr\"><head><meta http-equiv=\"refresh\" content=\"1\"></head><body>" + msgweb + "</body></html>");
-  Serial.println("Fin de l'appel"); 
+
 }
 
 void sendRouteur () {
-  Serial.println ("Appel de l'API");
-  server.send(200, "application/json",msgweb);
+  char json [tab_Routeur_size];
+  Serial.println ("Appel de l'API info");
+  serializeJson(Tab_Routeur,json);
+  server.send(200, "application/json",json);
   Serial.println("Fin de l'API"); 
-}*/
+}
+void paramRouteur () {
+  char json [64];
+  StaticJsonDocument<64>  ratio_update;
+  Serial.println ("Appel de l'API param");
+  if (server.hasArg("plain")== false){ //Check if body received
+    Serial.print("Body not received");
+    ratio_update["error"] = 1;
+    return;
+  }
+  DeserializationError error = deserializeJson(ratio_update, server.arg("plain"));
+  if (error) {
+    Serial.println("Impossible de lire le JSON - Impossible to read JSON file");
+    Serial.println(error.c_str());
+    ratio_update["error"] = 1;
+  } else {
+    MANUAL = ratio_update["ratio"];
+    ratio_update["error"] = 0;
+  }
+    serializeJson(ratio_update,json);
+    server.send(200, "application/json", json);
+    Delaisajustdimmer = 1;
+  Serial.println("Fin de l'API"); 
+}

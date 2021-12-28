@@ -110,7 +110,8 @@ void loop() {
         if (value.toFloat()<0){
           Tab_Routeur["POR"]=0;
         } else {
-          Tab_Routeur["POR"]=value.toFloat()*CE/100;
+         // Tab_Routeur["POR"]=value.toFloat()*CE/100;
+         Tab_Routeur["POR"]=value.toFloat();
         }
       }else if (param=="SPL"){
         msgweb += "Samples : " + value+ "<BR>";
