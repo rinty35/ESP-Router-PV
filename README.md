@@ -17,3 +17,6 @@ Evolutions personnelles :
 	- Intégration de la MAJ OTA via AduinoOTA
 	- Serveur Web via ESP8266WebServer
 	- Port Série Software via SoftwareSerial
+	
+	- ESP-Router-PV Récupère les trames de l'ATMEGA et met à dispo l'information en JSON sur l'api httip://@ip/api/routeur le résultat est aussi visible sur http://@ip/api/routeur
+	- ESP-Router-PV-Client lit les informations de ESP-Router-PV et pilote un variateur 230v en PWM
