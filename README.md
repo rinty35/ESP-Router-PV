@@ -21,7 +21,7 @@ Evolutions personnelles :
 	
 ##	ESP-Router-PV 
 	Récupère les trames de l'ATMEGA et met à dispo l'information en JSON sur l'api httip://@ip/api/routeur
-	{"FID":4187,"EIB":2092.77,"MPC":37.5,"REE":-90.43,"POR":784.76,"SPL":57,"VO2":0}}
+	{"FID":4187,"EIB":2092.77,"MPC":37.5,"REE":-90.43,"POR":784.76,"SPL":57,"VO2":0}
 
 	FID : Fire Delay / Délais de déclanchement
 	EIB : Energy in Bucket / Energie virtuel stockée
